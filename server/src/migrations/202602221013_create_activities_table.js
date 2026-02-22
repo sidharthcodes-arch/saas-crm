@@ -3,30 +3,40 @@
  * @returns { Promise<void> }
  */
 exports.up = function (knex) {
-  return knex.schema.createTable("deal_items", (table) => {
+  return knex.schema.createTable("activities", (table) => {
     table.bigIncrements("id").primary();
 
     table
-      .bigInteger("deal_id")
+      .bigInteger("workspace_id")
       .unsigned()
       .notNullable()
       .references("id")
-      .inTable("deals")
+      .inTable("workspaces")
       .onDelete("CASCADE");
 
     table
-      .bigInteger("property_id")
+      .enu("entity_type", ["lead", "contact", "deal", "property"])
+      .notNullable();
+    table.bigInteger("entity_id").unsigned().notNullable();
+
+    table
+      .enu("type", ["call", "email", "meeting", "note", "task"])
+      .notNullable();
+
+    table.text("description").nullable();
+
+    table
+      .bigInteger("created_by")
       .unsigned()
       .notNullable()
       .references("id")
-      .inTable("properties");
+      .inTable("users");
 
-    table.decimal("price", 15, 2);
-
+    table.timestamp("activity_at").nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
   });
 };
 
 exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("deal_items");
+  return knex.schema.dropTableIfExists("activities");
 };
