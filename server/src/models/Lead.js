@@ -1,5 +1,4 @@
-const { db } = require("../config/db");
-
+const { db } = require("../config/db/db");
 class Lead {
   // ─── Fields ────────────────────────────────────────────────────────
   static fields = {

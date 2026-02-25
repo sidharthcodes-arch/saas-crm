@@ -1,5 +1,4 @@
-const { db } = require("../config/db");
-
+const { db } = require("../config/db/db");
 const VALID_ENTITY_TYPES = ["lead", "contact", "property", "deal"];
 
 class File {

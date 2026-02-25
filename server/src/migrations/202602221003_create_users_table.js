@@ -27,6 +27,7 @@ exports.up = function (knex) {
     table.string("password").notNullable();
     table.boolean("is_super_admin").defaultTo(false);
     table.boolean("is_active").defaultTo(true);
+    table.timestamp("deleted_at").nullable();
 
     table.timestamps(true, true);
   });

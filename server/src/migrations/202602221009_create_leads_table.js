@@ -48,6 +48,9 @@ exports.up = function (knex) {
       .references("id")
       .inTable("users");
 
+    table.string("source").nullable(); // 'manual', 'web_form', 'import'
+    table.timestamp("deleted_at").nullable(); // soft delete
+
     table.timestamps(true, true);
   });
 };

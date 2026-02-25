@@ -1,4 +1,4 @@
-const { db } = require("../config/db");
+const { db } = require("../config/db/db");
 
 const VALID_TYPES = ["call", "meeting", "note"];
 const VALID_RELATED_TYPES = ["lead", "contact", "property", "deal"];

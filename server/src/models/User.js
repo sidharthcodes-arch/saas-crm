@@ -1,4 +1,4 @@
-const { db } = require("../config/db");
+const { db } = require("../config/db/db");
 const bcrypt = require("bcryptjs");
 
 class User {
@@ -104,7 +104,9 @@ class User {
   }
 
   static async delete(id) {
-    return db("users").where({ id }).delete();
+    return db("users")
+      .where({ id })
+      .update({ deleted_at: new Date(), is_active: false });
   }
 
   static async verifyPassword(plainPassword, hashedPassword) {
