@@ -104,64 +104,6 @@ class Deal {
   }
 }
 
-class DealItem {
-  // ─── Fields ────────────────────────────────────────────────────────
-  static fields = {
-    id: { type: "BIGINT", required: false },
-    deal_id: { type: "BIGINT", required: true },
-    property_id: { type: "BIGINT", required: true },
-    price: { type: "DECIMAL", required: true },
-    created_at: { type: "TIMESTAMP", required: false },
-  };
 
-  // ─── Validation ────────────────────────────────────────────────────
-  static validate(data) {
-    const errors = [];
-    if (!data.property_id) errors.push("property_id is required");
-    if (!data.price && data.price !== 0) errors.push("price is required");
-    if (isNaN(data.price)) errors.push("price must be a number");
-    return errors;
-  }
 
-  // ─── Queries ───────────────────────────────────────────────────────
-
-  // All items in a deal with property details
-  static async findByDeal(dealId) {
-    return db("deal_items")
-      .where("deal_items.deal_id", dealId)
-      .join("properties", "deal_items.property_id", "properties.id")
-      .select(
-        "deal_items.*",
-        "properties.name as property_name",
-        "properties.code as property_code",
-        "properties.area_sqft",
-      )
-      .orderBy("deal_items.created_at", "asc");
-  }
-
-  static async findById(id) {
-    return db("deal_items").where({ id }).first();
-  }
-
-  static async create(dealId, data) {
-    const errors = DealItem.validate(data);
-    if (errors.length) throw new Error(errors.join(", "));
-
-    const [id] = await db("deal_items").insert({
-      deal_id: dealId,
-      property_id: data.property_id,
-      price: data.price,
-    });
-    return id;
-  }
-
-  static async delete(id) {
-    return db("deal_items").where({ id }).delete();
-  }
-
-  static async deleteByDeal(dealId) {
-    return db("deal_items").where({ deal_id: dealId }).delete();
-  }
-}
-
-module.exports = { Deal, DealItem };
+module.exports =  Deal;

@@ -3,6 +3,8 @@ const helmet = require("helmet");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 
+const authRoutes = require("./modules/auth/auth.routes");
+
 const app = express();
 
 app.use(helmet());
@@ -13,7 +15,8 @@ app.use(express.urlencoded({ extended: true }));
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use(limiter);
 
-// Routes will go here
+// Routes
+app.use("/api/v1/auth", authRoutes);
 // app.use("/api/v1/leads", leadRoutes);
 
 // Global error handler

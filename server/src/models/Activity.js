@@ -9,10 +9,10 @@ class Activity {
     id: { type: "BIGINT", required: false },
     workspace_id: { type: "BIGINT", required: true },
     type: { type: "ENUM", required: true, values: VALID_TYPES },
-    related_type: { type: "ENUM", required: true, values: VALID_RELATED_TYPES },
-    related_id: { type: "BIGINT", required: true },
+    entity_type: { type: "ENUM", required: true, values: VALID_RELATED_TYPES },
+    entity_id: { type: "BIGINT", required: true },
     description: { type: "TEXT", required: false },
-    user_id: { type: "BIGINT", required: true },
+    created_by: { type: "BIGINT", required: true },
     created_at: { type: "TIMESTAMP", required: false },
   };
 
