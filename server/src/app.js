@@ -4,6 +4,8 @@ const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 
 const authRoutes = require("./modules/auth/auth.routes");
+const workspaceRoutes = require("./modules/workspaces/workspace.routes");
+const userRoutes = require("./modules/users/user.routes");
 
 const app = express();
 
@@ -17,6 +19,8 @@ app.use(limiter);
 
 // Routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/workspaces", workspaceRoutes);
+app.use("/api/v1/users", userRoutes);
 // app.use("/api/v1/leads", leadRoutes);
 
 // Global error handler

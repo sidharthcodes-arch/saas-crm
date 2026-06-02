@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../../models/User");
 const Workspace = require("../../models/Workspace");
+const Role = require("../../models/Roles");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
@@ -12,27 +13,50 @@ function generateToken(payload) {
 }
 
 // ─── Register ─────────────────────────────────────────────────────────────
-// Creates a new workspace + the first admin user in one transaction.
-// Used for the SaaS onboarding flow (new tenant sign-up).
+// Flow:
+//   1. Validate inputs
+//   2. Create workspace
+//   3. Create workspace-scoped "admin" role
+//   4. Create user assigned to that role
+//   5. Return token + user (no role_id needed in request body)
 
-async function register({ workspaceName, name, email, password, role_id }) {
+async function register({ workspaceName, name, email, password }) {
   if (!workspaceName || workspaceName.trim() === "") {
     const err = new Error("workspaceName is required");
     err.statusCode = 400;
     throw err;
   }
+  if (!name || name.trim() === "") {
+    const err = new Error("name is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (!email || email.trim() === "") {
+    const err = new Error("email is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (!password) {
+    const err = new Error("password is required");
+    err.statusCode = 400;
+    throw err;
+  }
 
-  // Create workspace first
+  // 1. Create workspace
   const workspaceId = await Workspace.create({ name: workspaceName });
 
-  // Create the owner user inside that workspace
-  const userId = await User.create(
-    { name, email, password, role_id, is_super_admin: false },
+  // 2. Create workspace-scoped admin role
+  const adminRoleId = await Role.createWorkspaceRole(workspaceId, { name: "admin" });
+
+  // 3. Create user with the new admin role
+  const newUserId = await User.create(
+    { name, email, password, role_id: adminRoleId, is_super_admin: false },
     workspaceId
   );
 
-  const user = await User.findById(userId);
+  const user = await User.findById(newUserId);
 
+  // 4. Generate token
   const token = generateToken({
     id: user.id,
     workspace_id: user.workspace_id,
