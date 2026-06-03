@@ -85,6 +85,7 @@ class Lead {
       name: data.name.trim(),
       phone: data.phone || null,
       email: data.email?.trim().toLowerCase() || null,
+      source: data.source || null,
       created_by: createdBy,
     });
     return id;
@@ -103,6 +104,7 @@ class Lead {
         name: data.name.trim(),
         phone: data.phone || null,
         email: data.email?.trim().toLowerCase() || null,
+        source: data.source || null,
       });
   }
 

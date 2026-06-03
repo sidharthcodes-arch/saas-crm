@@ -46,7 +46,7 @@ async function register({ workspaceName, name, email, password }) {
   const workspaceId = await Workspace.create({ name: workspaceName });
 
   // 2. Create workspace-scoped admin role
-  const adminRoleId = await Role.createWorkspaceRole(workspaceId, { name: "admin" });
+  const adminRoleId = await Role.create({ name: "admin" });
 
   // 3. Create user with the new admin role
   const newUserId = await User.create(

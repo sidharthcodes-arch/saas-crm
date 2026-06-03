@@ -6,6 +6,7 @@ const rateLimit = require("express-rate-limit");
 const authRoutes = require("./modules/auth/auth.routes");
 const workspaceRoutes = require("./modules/workspaces/workspace.routes");
 const userRoutes = require("./modules/users/user.routes");
+const leadRoutes = require("./modules/leads/leads.routes");
 
 const app = express();
 
@@ -21,7 +22,7 @@ app.use(limiter);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/workspaces", workspaceRoutes);
 app.use("/api/v1/users", userRoutes);
-// app.use("/api/v1/leads", leadRoutes);
+app.use("/api/v1/leads", leadRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

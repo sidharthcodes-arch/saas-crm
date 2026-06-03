@@ -3,7 +3,6 @@ class Role {
   // ─── Fields ────────────────────────────────────────────────────────
   static fields = {
     id: { type: "BIGINT", required: false },
-    workspace_id: { type: "BIGINT", required: false, default: null }, // NULL = platform role
     name: { type: "VARCHAR", required: true },
     created_at: { type: "TIMESTAMP", required: false },
   };
@@ -18,37 +17,18 @@ class Role {
   }
 
   // ─── Queries ───────────────────────────────────────────────────────
-  static async findPlatformRoles() {
-    return db("roles").whereNull("workspace_id").orderBy("created_at", "desc");
-  }
-
-  static async findByWorkspace(workspaceId) {
-    return db("roles")
-      .where({ workspace_id: workspaceId })
-      .orderBy("created_at", "desc");
+  static async findAll() {
+    return db("roles").orderBy("created_at", "desc");
   }
 
   static async findById(id) {
     return db("roles").where({ id }).first();
   }
 
-  static async createPlatformRole(data) {
+  static async create(data) {
     const errors = Role.validate(data);
     if (errors.length) throw new Error(errors.join(", "));
-    const [id] = await db("roles").insert({
-      name: data.name.trim(),
-      workspace_id: null,
-    });
-    return id;
-  }
-
-  static async createWorkspaceRole(workspaceId, data) {
-    const errors = Role.validate(data);
-    if (errors.length) throw new Error(errors.join(", "));
-    const [id] = await db("roles").insert({
-      name: data.name.trim(),
-      workspace_id: workspaceId,
-    });
+    const [id] = await db("roles").insert({ name: data.name.trim() });
     return id;
   }
 
