@@ -7,6 +7,8 @@ const authRoutes = require("./modules/auth/auth.routes");
 const workspaceRoutes = require("./modules/workspaces/workspace.routes");
 const userRoutes = require("./modules/users/user.routes");
 const leadRoutes = require("./modules/leads/leads.routes");
+const contactRoutes = require("./modules/contacts/contacts.routes");
+const dealRoutes = require("./modules/deals/deals.routes");
 
 const app = express();
 
@@ -23,6 +25,8 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/workspaces", workspaceRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/leads", leadRoutes);
+app.use("/api/v1/contacts", contactRoutes);
+app.use("/api/v1/deals", dealRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
