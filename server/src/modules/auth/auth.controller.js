@@ -23,7 +23,7 @@ async function register(req, res, next) {
     });
 
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
-    return res.status(201).json({ success: true, data: { user } });
+    return res.status(201).json({ success: true, data: { token, user } });
   } catch (err) {
     next(err);
   }
@@ -37,7 +37,7 @@ async function login(req, res, next) {
     const { token, user } = await authService.login({ email, password });
 
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
-    return res.status(200).json({ success: true, data: { user } });
+    return res.status(200).json({ success: true, data: { token, user } });
   } catch (err) {
     next(err);
   }

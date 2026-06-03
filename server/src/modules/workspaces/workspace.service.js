@@ -29,8 +29,11 @@ async function getWorkspace(id) {
 }
 
 // ─── Update Workspace ─────────────────────────────────────────────────────
+// Only allows updating the name.
+// is_active is intentionally excluded — use setActiveStatus() for that,
+// which should only be called by super admin routes.
 
-async function updateWorkspace(id, { name, is_active }) {
+async function updateWorkspace(id, { name }) {
   const workspace = await Workspace.findById(id);
 
   if (!workspace) {
@@ -39,13 +42,31 @@ async function updateWorkspace(id, { name, is_active }) {
     throw err;
   }
 
-  // Merge existing values so partial updates don't wipe fields
   await Workspace.update(id, {
     name: name ?? workspace.name,
-    is_active: is_active ?? workspace.is_active,
+    is_active: workspace.is_active, // always preserve existing value, never trust client
   });
 
   return Workspace.findById(id);
 }
 
-module.exports = { createWorkspace, getWorkspace, updateWorkspace };
+// ─── Set Active Status (super admin only) ─────────────────────────────────
+
+async function setActiveStatus(id, is_active) {
+  const workspace = await Workspace.findById(id);
+
+  if (!workspace) {
+    const err = new Error("Workspace not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  await Workspace.update(id, {
+    name: workspace.name,
+    is_active,
+  });
+
+  return Workspace.findById(id);
+}
+
+module.exports = { createWorkspace, getWorkspace, updateWorkspace, setActiveStatus };

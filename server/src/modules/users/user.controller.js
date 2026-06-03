@@ -10,10 +10,10 @@ async function getUsers(req, res, next) {
   }
 }
 
-// POST /api/v1/users/invite
-async function inviteUser(req, res, next) {
+// POST /api/v1/users/create
+async function createUser(req, res, next) {
   try {
-    const user = await userService.inviteUser(req.user.workspace_id, req.body);
+    const user = await userService.createUser(req.user.workspace_id, req.body);
     return res.status(201).json({ success: true, data: user });
   } catch (err) {
     next(err);
@@ -47,4 +47,4 @@ async function deactivateUser(req, res, next) {
   }
 }
 
-module.exports = { getUsers, inviteUser, updateUser, deactivateUser };
+module.exports = { getUsers, createUser, updateUser, deactivateUser };

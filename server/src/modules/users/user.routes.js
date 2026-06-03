@@ -7,7 +7,7 @@ const { requireAuth } = require("../../middleware/auth.middleware");
 router.use(requireAuth);
 
 router.get("/", userController.getUsers);
-router.post("/invite", userController.inviteUser);
+router.post("/create", userController.createUser);
 router.put("/:id", userController.updateUser);
 router.delete("/:id", userController.deactivateUser);
 

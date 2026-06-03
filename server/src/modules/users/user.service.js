@@ -7,11 +7,9 @@ async function getUsers(workspaceId) {
   return users.map(User.sanitize);
 }
 
-// ─── Invite User ──────────────────────────────────────────────────────────
-// "Invite" creates the user account immediately with a temporary password.
-// In a real flow you'd send an email — that can be layered on later.
+// ─── Create User ──────────────────────────────────────────────────────────
 
-async function inviteUser(workspaceId, { name, email, role_id, password }) {
+async function createUser(workspaceId, { name, email, role_id, password }) {
   if (!email || email.trim() === "") {
     const err = new Error("email is required");
     err.statusCode = 400;
@@ -85,4 +83,4 @@ async function deactivateUser(id, workspaceId) {
   return { message: "User deactivated successfully" };
 }
 
-module.exports = { getUsers, inviteUser, updateUser, deactivateUser };
+module.exports = { getUsers, createUser, updateUser, deactivateUser };

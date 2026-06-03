@@ -19,7 +19,7 @@ class Workspace {
     if (data.name && data.name.length > 150) {
       errors.push("name must be under 150 characters");
     }
-    if (data.is_active !== undefined && typeof data.is_active !== "boolean") {
+    if (data.is_active !== undefined && ![true, false, 0, 1].includes(data.is_active)) {
       errors.push("is_active must be a boolean");
     }
 
