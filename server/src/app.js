@@ -9,6 +9,8 @@ const userRoutes = require("./modules/users/user.routes");
 const leadRoutes = require("./modules/leads/leads.routes");
 const contactRoutes = require("./modules/contacts/contacts.routes");
 const dealRoutes = require("./modules/deals/deals.routes");
+const propertyTypesRoutes = require("./modules/propertyTypes/propertyTypes.routes");
+const propertiesRoutes = require("./modules/properties/properties.routes");
 
 const app = express();
 
@@ -27,6 +29,8 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/leads", leadRoutes);
 app.use("/api/v1/contacts", contactRoutes);
 app.use("/api/v1/deals", dealRoutes);
+app.use("/api/v1/property-types", propertyTypesRoutes);
+app.use("/api/v1/properties", propertiesRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
