@@ -11,6 +11,9 @@ const contactRoutes = require("./modules/contacts/contacts.routes");
 const dealRoutes = require("./modules/deals/deals.routes");
 const propertyTypesRoutes = require("./modules/propertyTypes/propertyTypes.routes");
 const propertiesRoutes = require("./modules/properties/properties.routes");
+const activitiesRoutes = require("./modules/activities/activities.routes");
+const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
+const filesRoutes = require("./modules/files/files.routes");
 
 const app = express();
 
@@ -31,6 +34,12 @@ app.use("/api/v1/contacts", contactRoutes);
 app.use("/api/v1/deals", dealRoutes);
 app.use("/api/v1/property-types", propertyTypesRoutes);
 app.use("/api/v1/properties", propertiesRoutes);
+app.use("/api/v1/activities", activitiesRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/files", filesRoutes);
+
+// Serve uploads folder as static
+app.use("/uploads", express.static("uploads"));
 
 // Global error handler
 app.use((err, req, res, next) => {
