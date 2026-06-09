@@ -1,104 +1,151 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import api from '@/lib/axios';
-import { User } from '@/lib/types';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import api from "@/lib/axios";
+import { User } from "@/lib/types";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+
+// ─── Constants ──────────────────────────────────────────────────────────────────
 
 const STATUSES = [
-  { id: 1, name: 'New' },
-  { id: 2, name: 'Contacted' },
-  { id: 3, name: 'Follow Up' },
-  { id: 4, name: 'Qualified' },
-  { id: 5, name: 'Converted' },
-  { id: 6, name: 'Lost' },
+  { id: 1, name: "New" },
+  { id: 2, name: "Contacted" },
+  { id: 3, name: "Follow Up" },
+  { id: 4, name: "Qualified" },
+  { id: 5, name: "Converted" },
+  { id: 6, name: "Lost" },
 ];
 
-const leadSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  phone: z.string().min(1, 'Phone is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  source: z.string().optional(),
-  status_id: z.coerce.number({ required_error: 'Status is required' }).min(1, 'Status is required'),
-  assigned_to: z.coerce.number().optional().nullable(),
-});
+// ─── Raw form values (HTML form always yields strings for select) ───────────────
 
-type LeadFormValues = z.infer<typeof leadSchema>;
+interface RawFormValues {
+  name: string;
+  phone: string;
+  email: string;
+  source: string;
+  status_id: string;
+  assigned_to: string;
+}
+
+// ─── Coerced output values ──────────────────────────────────────────────────────
+
+export interface LeadFormData {
+  name: string;
+  phone: string;
+  email?: string;
+  source?: string;
+  status_id: number;
+  assigned_to?: number | null;
+}
+
+// ─── Props ─────────────────────────────────────────────────────────────────────
 
 interface LeadFormProps {
-  onSubmit: (data: LeadFormValues) => Promise<void>;
+  onSubmit: (data: LeadFormData) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
 
-export function LeadForm({ onSubmit, onCancel, isLoading = false }: LeadFormProps) {
-  const [users, setUsers] = useState<User[]>([]);
+// ─── Component ──────────────────────────────────────────────────────────────────
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LeadFormValues>({
-    resolver: zodResolver(leadSchema),
+export function LeadForm({
+  onSubmit,
+  onCancel,
+  isLoading = false,
+}: LeadFormProps) {
+  const [users, setUsers] = useState<User[]>([]);
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof RawFormValues, string>>
+  >({});
+
+  const { register, handleSubmit, reset } = useForm<RawFormValues>({
     defaultValues: {
-      name: '',
-      phone: '',
-      email: '',
-      source: '',
-      status_id: 1,
-      assigned_to: null,
+      name: "",
+      phone: "",
+      email: "",
+      source: "",
+      status_id: "1",
+      assigned_to: "",
     },
   });
 
   useEffect(() => {
-    api.get('/users')
+    api
+      .get("/users")
       .then((res) => setUsers(res.data.data ?? []))
       .catch(() => setUsers([]));
   }, []);
 
+  // ── Validate + coerce ──
+  const handleFormSubmit = async (raw: RawFormValues) => {
+    const errs: Partial<Record<keyof RawFormValues, string>> = {};
+    if (!raw.name.trim()) errs.name = "Name is required";
+    if (!raw.phone.trim()) errs.phone = "Phone is required";
+    if (raw.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.email)) {
+      errs.email = "Invalid email address";
+    }
+    if (!raw.status_id || Number(raw.status_id) < 1) {
+      errs.status_id = "Status is required";
+    }
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    const coerced: LeadFormData = {
+      name: raw.name.trim(),
+      phone: raw.phone.trim(),
+      email: raw.email.trim() || undefined,
+      source: raw.source.trim() || undefined,
+      status_id: Number(raw.status_id),
+      assigned_to: raw.assigned_to ? Number(raw.assigned_to) : null,
+    };
+    await onSubmit(coerced);
+  };
+
   const selectClass =
-    'w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white';
+    "w-full px-3 py-2 border border-gray-200 rounded-lg text-[13px] text-[#111827] bg-white focus:outline-none focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] transition-colors duration-150";
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-1">
-      <Input
-        label="Name *"
-        placeholder="Full name"
-        error={errors.name?.message}
-        {...register('name')}
-      />
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      {/* Row 1: Name | Phone */}
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label="Name *"
+          placeholder="Full name"
+          error={errors.name}
+          {...register("name")}
+        />
+        <Input
+          label="Phone *"
+          placeholder="+1 234 567 8900"
+          error={errors.phone}
+          {...register("phone")}
+        />
+      </div>
 
-      <Input
-        label="Phone *"
-        placeholder="+1 234 567 8900"
-        error={errors.phone?.message}
-        {...register('phone')}
-      />
+      {/* Row 2: Email | Source */}
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label="Email"
+          type="email"
+          placeholder="email@example.com"
+          error={errors.email}
+          {...register("email")}
+        />
+        <Input
+          label="Source"
+          placeholder="e.g. Website, Referral"
+          {...register("source")}
+        />
+      </div>
 
-      <Input
-        label="Email"
-        type="email"
-        placeholder="email@example.com"
-        error={errors.email?.message}
-        {...register('email')}
-      />
-
-      <Input
-        label="Source"
-        placeholder="e.g. Website, Referral, Walk-in"
-        {...register('source')}
-      />
-
-      {/* Status */}
-      <div className="w-full mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+      {/* Status — full width */}
+      <div className="w-full">
+        <label className="block text-[12px] font-medium text-[#374151] mb-1.5">
           Status *
         </label>
-        <select className={selectClass} {...register('status_id')}>
+        <select className={selectClass} {...register("status_id")}>
           {STATUSES.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -106,16 +153,16 @@ export function LeadForm({ onSubmit, onCancel, isLoading = false }: LeadFormProp
           ))}
         </select>
         {errors.status_id && (
-          <p className="mt-1 text-xs text-red-600">{errors.status_id.message}</p>
+          <p className="mt-1 text-[11px] text-red-600">{errors.status_id}</p>
         )}
       </div>
 
-      {/* Assigned To */}
-      <div className="w-full mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+      {/* Assigned To — full width */}
+      <div className="w-full">
+        <label className="block text-[12px] font-medium text-[#374151] mb-1.5">
           Assigned To
         </label>
-        <select className={selectClass} {...register('assigned_to')}>
+        <select className={selectClass} {...register("assigned_to")}>
           <option value="">— Unassigned —</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
@@ -125,12 +172,18 @@ export function LeadForm({ onSubmit, onCancel, isLoading = false }: LeadFormProp
         </select>
       </div>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+      {/* Footer */}
+      <div className="flex justify-end gap-3 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+        >
           Cancel
         </Button>
         <Button type="submit" isLoading={isLoading}>
-          Create Lead
+          Save Lead
         </Button>
       </div>
     </form>
