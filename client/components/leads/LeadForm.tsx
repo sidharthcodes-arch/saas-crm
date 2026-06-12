@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import api from "@/lib/axios";
-import { User } from "@/lib/types";
+import { Lead, User } from "@/lib/types";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
@@ -43,6 +43,7 @@ export interface LeadFormData {
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
 interface LeadFormProps {
+  lead?: Lead;
   onSubmit: (data: LeadFormData) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -51,6 +52,7 @@ interface LeadFormProps {
 // ─── Component ──────────────────────────────────────────────────────────────────
 
 export function LeadForm({
+  lead,
   onSubmit,
   onCancel,
   isLoading = false,
@@ -60,14 +62,14 @@ export function LeadForm({
     Partial<Record<keyof RawFormValues, string>>
   >({});
 
-  const { register, handleSubmit, reset } = useForm<RawFormValues>({
+  const { register, handleSubmit } = useForm<RawFormValues>({
     defaultValues: {
-      name: "",
-      phone: "",
-      email: "",
-      source: "",
-      status_id: "1",
-      assigned_to: "",
+      name: lead?.name ?? "",
+      phone: lead?.phone ?? "",
+      email: lead?.email ?? "",
+      source: lead?.source ?? "",
+      status_id: lead?.status_id ? String(lead.status_id) : "1",
+      assigned_to: lead?.assigned_to ? String(lead.assigned_to) : "",
     },
   });
 
@@ -183,7 +185,7 @@ export function LeadForm({
           Cancel
         </Button>
         <Button type="submit" isLoading={isLoading}>
-          Save Lead
+          {lead ? 'Save Changes' : 'Save Lead'}
         </Button>
       </div>
     </form>

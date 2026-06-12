@@ -51,7 +51,11 @@ async function getLeadById(id, workspaceId) {
 
   // Fetch activities for this lead
   const activities = await db("activities")
-    .where({ workspace_id: workspaceId, entity_type: "lead", entity_id: id })
+    .where({
+      "activities.workspace_id": workspaceId,
+      "activities.entity_type": "lead",
+      "activities.entity_id": id,
+    })
     .leftJoin("users", "activities.created_by", "users.id")
     .select("activities.*", "users.name as performed_by")
     .orderBy("activities.created_at", "desc");

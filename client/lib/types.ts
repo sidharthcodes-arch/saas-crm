@@ -42,9 +42,11 @@ export interface Contact {
   id: number;
   workspace_id: number;
   created_from_lead_id: number | null;
+  original_lead_name?: string | null;
   name: string;
   phone: string;
   email: string | null;
+  deals_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +60,7 @@ export interface Deal {
   closed_at: string | null;
   contact_name: string;
   status_name: string;
+  properties_count?: number;
   items: DealItem[];
   created_at: string;
 }
@@ -100,6 +103,7 @@ export interface Activity {
   description: string;
   created_by: number;
   creator_name: string;
+  performed_by?: string | null;
   activity_at: string;
   created_at: string;
 }

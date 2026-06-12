@@ -49,9 +49,9 @@ class Activity {
   static async findByEntity(workspaceId, entityType, entityId) {
     return db("activities")
       .where({
-        workspace_id: workspaceId,
-        entity_type: entityType,
-        entity_id: entityId,
+        "activities.workspace_id": workspaceId,
+        "activities.entity_type": entityType,
+        "activities.entity_id": entityId,
       })
       .leftJoin("users", "activities.created_by", "users.id")
       .select("activities.*", "users.name as performed_by")

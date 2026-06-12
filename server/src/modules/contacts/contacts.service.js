@@ -9,7 +9,11 @@ async function getContacts(workspaceId, filters = {}) {
   const query = db("contacts")
     .where("contacts.workspace_id", workspaceId)
     .leftJoin("leads", "contacts.created_from_lead_id", "leads.id")
-    .select("contacts.*", "leads.name as original_lead_name")
+    .select(
+      "contacts.*",
+      "leads.name as original_lead_name",
+      db.raw("(select count(*) from deals where deals.contact_id = contacts.id) as deals_count")
+    )
     .orderBy("contacts.created_at", "desc");
 
   if (filters.created_from_lead_id) {
@@ -42,7 +46,11 @@ async function getContactById(id, workspaceId) {
 
   // Fetch activities for this contact
   const activities = await db("activities")
-    .where({ workspace_id: workspaceId, entity_type: "contact", entity_id: id })
+    .where({
+      "activities.workspace_id": workspaceId,
+      "activities.entity_type": "contact",
+      "activities.entity_id": id,
+    })
     .leftJoin("users", "activities.created_by", "users.id")
     .select("activities.*", "users.name as performed_by")
     .orderBy("activities.created_at", "desc");

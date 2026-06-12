@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+import api from '@/lib/axios';
 import { Lead } from '@/lib/types';
 import { useLeads } from '@/hooks/useLeads';
 import LeadForm, { LeadFormData } from '@/components/leads/LeadForm';
@@ -110,17 +111,29 @@ function SkeletonRows() {
   );
 }
 
-// ─── Add Lead Modal ─────────────────────────────────────────────────────────────
+// ─── Lead Modal (shared for Add + Edit) ────────────────────────────────────────
 
-interface AddLeadModalProps {
+interface LeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: LeadFormData) => Promise<void>;
   formError: string | null;
   formLoading: boolean;
+  title: string;
+  subtitle: string;
+  editingLead?: Lead | null;
 }
 
-function AddLeadModal({ isOpen, onClose, onSubmit, formError, formLoading }: AddLeadModalProps) {
+function LeadModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  formError,
+  formLoading,
+  title,
+  subtitle,
+  editingLead,
+}: LeadModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -132,12 +145,12 @@ function AddLeadModal({ isOpen, onClose, onSubmit, formError, formLoading }: Add
       />
 
       {/* Dialog */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
           <div>
-            <h2 className="text-[16px] font-semibold text-[#111827]">Add New Lead</h2>
-            <p className="text-[12px] text-[#6b7280] mt-0.5">Fill in the details to add a new lead</p>
+            <h2 className="text-[16px] font-semibold text-[#111827]">{title}</h2>
+            <p className="text-[12px] text-[#6b7280] mt-0.5">{subtitle}</p>
           </div>
           <button
             onClick={onClose}
@@ -148,13 +161,15 @@ function AddLeadModal({ isOpen, onClose, onSubmit, formError, formLoading }: Add
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5">
+        <div className="px-6 py-5 overflow-y-auto">
           {formError && (
             <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">
               {formError}
             </div>
           )}
           <LeadForm
+            key={editingLead?.id ?? 'new'}
+            lead={editingLead ?? undefined}
             onSubmit={onSubmit}
             onCancel={onClose}
             isLoading={formLoading}
@@ -184,6 +199,7 @@ export default function LeadsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
 
   // Selected rows
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -234,25 +250,47 @@ export default function LeadsPage() {
     [deleteLead, fetchLeads, debouncedSearch, statusFilter]
   );
 
-  // ── Create ──
+  // ── Create / Edit submit ──
   const handleCreate = async (data: LeadFormData) => {
     setFormLoading(true);
     setFormError(null);
     try {
-      await createLead(data);
+      if (editingLead) {
+        await api.put(`/leads/${editingLead.id}`, data);
+      } else {
+        await createLead(data);
+      }
       setIsModalOpen(false);
+      setEditingLead(null);
       fetchLeads({ search: debouncedSearch, status_id: statusFilter });
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Failed to create lead';
+        `Failed to ${editingLead ? 'update' : 'create'} lead`;
       setFormError(msg);
     } finally {
       setFormLoading(false);
     }
   };
 
-  // ── Selection ──
+  const openAddModal = () => {
+    setEditingLead(null);
+    setFormError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (lead: Lead) => {
+    setEditingLead(lead);
+    setFormError(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingLead(null);
+    setFormError(null);
+  };
+
   const toggleAll = () => {
     if (selected.size === paginated.length) {
       setSelected(new Set());
@@ -279,7 +317,7 @@ export default function LeadsPage() {
         </div>
         <button
           id="add-lead-btn"
-          onClick={() => { setFormError(null); setIsModalOpen(true); }}
+          onClick={openAddModal}
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#2563eb] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-colors duration-150 flex-shrink-0"
         >
           <Plus size={15} />
@@ -400,7 +438,7 @@ export default function LeadsPage() {
                       </div>
                       {!hasFilters && (
                         <button
-                          onClick={() => { setFormError(null); setIsModalOpen(true); }}
+                          onClick={openAddModal}
                           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563eb] text-white text-[13px] font-medium hover:bg-[#1d4ed8] transition-colors duration-150"
                         >
                           <Plus size={14} />
@@ -492,12 +530,12 @@ export default function LeadsPage() {
                       })}
                     </td>
 
-                    {/* Actions — visible on row hover */}
+                    {/* Actions — always visible */}
                     <td
                       className="px-4 py-3 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => router.push(`/leads/${lead.id}`)}
                           className="p-1.5 rounded-md text-[#6b7280] hover:text-[#2563eb] hover:bg-blue-50 transition-colors duration-150"
@@ -506,7 +544,7 @@ export default function LeadsPage() {
                           <Eye size={14} />
                         </button>
                         <button
-                          onClick={() => router.push(`/leads/${lead.id}`)}
+                          onClick={() => openEditModal(lead)}
                           className="p-1.5 rounded-md text-[#6b7280] hover:text-[#16a34a] hover:bg-green-50 transition-colors duration-150"
                           title="Edit"
                         >
@@ -557,13 +595,20 @@ export default function LeadsPage() {
         )}
       </div>
 
-      {/* ── Add Lead Modal ── */}
-      <AddLeadModal
+      {/* ── Add / Edit Lead Modal ── */}
+      <LeadModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
         onSubmit={handleCreate}
         formError={formError}
         formLoading={formLoading}
+        title={editingLead ? 'Edit Lead' : 'Add New Lead'}
+        subtitle={
+          editingLead
+            ? `Editing ${editingLead.name}`
+            : 'Fill in the details to add a new lead'
+        }
+        editingLead={editingLead}
       />
     </div>
   );

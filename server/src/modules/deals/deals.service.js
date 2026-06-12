@@ -28,6 +28,7 @@ async function getDeals(workspaceId, filters = {}) {
       "contacts.name as contact_name",
       "contacts.phone as contact_phone",
       "statuses.name as status_name",
+      db.raw("(SELECT COUNT(*) FROM deal_items WHERE deal_items.deal_id = deals.id) as properties_count")
     )
     .orderBy("deals.created_at", "desc");
 

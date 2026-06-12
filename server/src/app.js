@@ -14,6 +14,7 @@ const propertiesRoutes = require("./modules/properties/properties.routes");
 const activitiesRoutes = require("./modules/activities/activities.routes");
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const filesRoutes = require("./modules/files/files.routes");
+const statusesRoutes = require("./modules/statuses/statuses.routes");
 
 const app = express();
 
@@ -22,7 +23,10 @@ app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "production" ? 100 : 10000,
+});
 app.use(limiter);
 
 // Routes
@@ -37,6 +41,8 @@ app.use("/api/v1/properties", propertiesRoutes);
 app.use("/api/v1/activities", activitiesRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/files", filesRoutes);
+app.use("/api/v1/statuses", statusesRoutes);
+
 
 // Serve uploads folder as static
 app.use("/uploads", express.static("uploads"));
