@@ -25,7 +25,9 @@ import {
   Briefcase,
   AlertCircle,
   X,
-  Sparkles
+  Sparkles,
+  Clock,
+  MoreVertical
 } from 'lucide-react';
 
 import api from '@/lib/axios';
@@ -59,34 +61,44 @@ function getInitials(name: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-function getStatusBorderColor(statusName: string): string {
-  const map: Record<string, string> = {
-    Open: 'border-l-4 border-l-amber-500',
-    Negotiation: 'border-l-4 border-l-orange-500',
-    Won: 'border-l-4 border-l-green-500',
-    Lost: 'border-l-4 border-l-red-500',
+function getStatusColorClasses(statusName: string) {
+  const map: Record<string, { border: string; bg: string; text: string; dot: string; headerBg: string }> = {
+    Open: {
+      border: 'border-l-4 border-l-amber-500',
+      bg: 'bg-amber-50/50',
+      text: 'text-amber-700',
+      dot: 'bg-amber-500',
+      headerBg: 'bg-amber-50/40 border-b border-amber-100/60',
+    },
+    Negotiation: {
+      border: 'border-l-4 border-l-orange-500',
+      bg: 'bg-orange-50/50',
+      text: 'text-orange-700',
+      dot: 'bg-orange-500',
+      headerBg: 'bg-orange-50/40 border-b border-orange-100/60',
+    },
+    Won: {
+      border: 'border-l-4 border-l-green-500',
+      bg: 'bg-green-50/50',
+      text: 'text-green-700',
+      dot: 'bg-green-500',
+      headerBg: 'bg-green-50/40 border-b border-green-100/60',
+    },
+    Lost: {
+      border: 'border-l-4 border-l-red-500',
+      bg: 'bg-red-50/50',
+      text: 'text-red-700',
+      dot: 'bg-red-500',
+      headerBg: 'bg-red-50/40 border-b border-red-100/60',
+    },
   };
-  return map[statusName] ?? 'border-l-4 border-l-gray-300';
-}
-
-function getStatusDotColor(statusName: string): string {
-  const map: Record<string, string> = {
-    Open: 'bg-amber-500',
-    Negotiation: 'bg-orange-500',
-    Won: 'bg-green-500',
-    Lost: 'bg-red-500',
+  return map[statusName] ?? {
+    border: 'border-l-4 border-l-gray-300',
+    bg: 'bg-gray-50/50',
+    text: 'text-gray-700',
+    dot: 'bg-gray-400',
+    headerBg: 'bg-white border-b border-gray-100',
   };
-  return map[statusName] ?? 'bg-gray-400';
-}
-
-function getColumnHeaderTint(statusName: string): string {
-  const map: Record<string, string> = {
-    Open: 'bg-amber-50/40 border-b border-amber-100',
-    Negotiation: 'bg-orange-50/40 border-b border-orange-100',
-    Won: 'bg-green-50/40 border-b border-green-100',
-    Lost: 'bg-red-50/40 border-b border-red-100',
-  };
-  return map[statusName] ?? 'bg-white';
 }
 
 // ─── Draggable Deal Card Component ─────────────────────────────────────────────
@@ -105,58 +117,80 @@ function DraggableDealCard({ deal }: { deal: Deal }) {
       }
     : undefined;
 
+  const colorSetup = getStatusColorClasses(deal.status_name);
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={() => router.push(`/deals/${deal.id}`)}
-      className={`bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-150 cursor-pointer relative flex flex-col gap-3 ${getStatusBorderColor(
-        deal.status_name
-      )} ${isDragging ? 'opacity-40 border-blue-400 shadow-lg' : ''}`}
+      className={`bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-4 hover:shadow-md transition-shadow duration-150 cursor-pointer relative flex flex-col gap-3 ${colorSetup.border} ${isDragging ? 'opacity-40 border-blue-400 shadow-lg' : ''}`}
     >
-      {/* Top row: Contact display & Drag handle */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold text-[11px] flex-shrink-0"
-            style={{ backgroundColor: getAvatarColor(deal.contact_name || 'U') }}
-          >
-            {getInitials(deal.contact_name || 'U')}
-          </div>
-          <span className="text-[13px] font-bold text-gray-900 truncate">
-            {deal.contact_name}
+      {/* Top Row: Status Tag & Created Date */}
+      <div className="flex items-center justify-between">
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border border-current/25 ${colorSetup.bg} ${colorSetup.text}`}>
+          {deal.status_name}
+        </span>
+        <div className="flex items-center gap-1 text-[11px] text-slate-400">
+          <Clock size={11} />
+          <span>
+            {new Date(deal.created_at).toLocaleDateString('en-IN', {
+              month: 'short',
+              day: 'numeric',
+            })}
           </span>
-        </div>
-        <div
-          {...listeners}
-          {...attributes}
-          onClick={(e) => e.stopPropagation()}
-          className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-grab active:cursor-grabbing flex-shrink-0"
-          title="Drag to update stage"
-        >
-          <GripVertical size={14} />
         </div>
       </div>
 
-      {/* Center row: Deal value */}
+      {/* Middle Row: Contact Name & Subtitle */}
       <div>
-        <p className="text-[16px] font-bold text-gray-900">
+        <h4 className="text-[14px] font-bold text-slate-800 hover:text-blue-600 transition-colors duration-150 truncate">
+          {deal.contact_name}
+        </h4>
+        <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+          {deal.properties_count && deal.properties_count > 0 
+            ? `Linked Property Opportunity` 
+            : `Pipeline Deal Opportunity`}
+        </p>
+      </div>
+
+      {/* Deal Value */}
+      <div>
+        <p className="text-[17px] font-extrabold text-slate-900">
           {formatINR(deal.total_amount)}
         </p>
       </div>
 
-      {/* Bottom row: Properties & Date */}
-      <div className="flex items-center justify-between text-[11px] text-gray-400 font-medium">
-        <span>
-          {deal.properties_count || 0} {deal.properties_count === 1 ? 'property' : 'properties'}
-        </span>
-        <span>
-          {new Date(deal.created_at).toLocaleDateString('en-IN', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          })}
-        </span>
+      {/* Footer Row: Divider, Properties Count & Avatar Circle */}
+      <div className="border-t border-slate-100 mt-1 pt-3 flex items-center justify-between">
+        <div className="flex items-center gap-1 text-[11px] text-slate-400 font-semibold">
+          <Building size={12} className="text-slate-350" />
+          <span>
+            {deal.properties_count || 0} {deal.properties_count === 1 ? 'property' : 'properties'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Contact Initial Avatar */}
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-[10px] border border-white shadow-sm flex-shrink-0"
+            style={{ backgroundColor: getAvatarColor(deal.contact_name || 'U') }}
+            title={deal.contact_name}
+          >
+            {getInitials(deal.contact_name || 'U')}
+          </div>
+
+          {/* Drag Handle */}
+          <div
+            {...listeners}
+            {...attributes}
+            onClick={(e) => e.stopPropagation()}
+            className="p-1 rounded text-slate-350 hover:text-slate-600 hover:bg-slate-50 cursor-grab active:cursor-grabbing flex-shrink-0 transition-colors"
+            title="Drag to update stage"
+          >
+            <GripVertical size={13} />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -168,50 +202,77 @@ interface DroppableColumnProps {
   status: { id: number; name: string };
   deals: Deal[];
   getColumnTotal: (statusName: string) => number;
+  onAddDealClick: (statusId: number) => void;
 }
 
-function DroppableColumn({ status, deals, getColumnTotal }: DroppableColumnProps) {
+function DroppableColumn({ status, deals, getColumnTotal, onAddDealClick }: DroppableColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: `column-${status.id}`,
   });
 
+  const colorSetup = getStatusColorClasses(status.name);
+
   return (
     <div
       ref={setNodeRef}
-      className={`bg-slate-100/70 border border-gray-200 rounded-xl min-h-[500px] flex flex-col flex-1 min-w-[270px] max-w-[320px] transition-all duration-150 ${
-        isOver ? 'ring-2 ring-blue-500 border-transparent shadow-sm' : ''
+      className={`bg-slate-50 border border-slate-200/60 rounded-2xl min-h-[550px] flex flex-col flex-1 min-w-[280px] max-w-[320px] transition-all duration-150 ${
+        isOver ? 'ring-2 ring-blue-500 border-transparent shadow-sm bg-blue-50/10' : ''
       }`}
     >
       {/* Column Header */}
-      <div className={`px-4 py-3 rounded-t-xl flex flex-col gap-1.5 ${getColumnHeaderTint(status.name)}`}>
+      <div className={`px-4 py-3.5 rounded-t-2xl flex flex-col gap-1 ${colorSetup.headerBg}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <span className={`w-2 h-2 rounded-full ${getStatusDotColor(status.name)} flex-shrink-0`} />
-            <h3 className="text-[13px] font-bold text-gray-900 truncate">
+            <span className={`w-2 h-2 rounded-full ${colorSetup.dot} flex-shrink-0`} />
+            <h3 className="text-[13px] font-bold text-slate-800 truncate">
               {status.name}
             </h3>
-            <span className="px-1.5 py-0.5 rounded-full bg-gray-150 text-[10px] font-bold text-gray-650 border border-gray-200 flex-shrink-0">
+            <span className="px-1.5 py-0.5 rounded-full bg-slate-150 text-[10px] font-bold text-slate-600 border border-slate-200 flex-shrink-0">
               {deals.length}
             </span>
           </div>
+
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => onAddDealClick(status.id)}
+              className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition-colors"
+              title={`Add deal to ${status.name}`}
+            >
+              <Plus size={14} />
+            </button>
+            <button className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+              <MoreVertical size={13} />
+            </button>
+          </div>
         </div>
         <div>
-          <span className="text-[12px] font-bold text-gray-500">
+          <span className="text-[12px] font-extrabold text-slate-500">
             {formatINR(getColumnTotal(status.name))}
           </span>
         </div>
       </div>
 
       {/* Column Cards Container */}
-      <div className="p-3 flex-1 overflow-y-auto max-h-[600px] space-y-3">
+      <div className="p-3 flex-1 overflow-y-auto max-h-[580px] space-y-3">
         {deals.length === 0 ? (
-          <div className="h-full min-h-[200px] border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-4 text-center bg-gray-50/20">
-            <Inbox size={24} className="text-gray-300 mb-1.5" />
-            <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">No deals</p>
+          <div className="h-full min-h-[220px] border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center p-4 text-center bg-slate-100/15">
+            <Inbox size={22} className="text-slate-300 mb-1.5" />
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">No deals</p>
           </div>
         ) : (
           deals.map((deal) => <DraggableDealCard key={deal.id} deal={deal} />)
         )}
+      </div>
+
+      {/* Column Footer: Inline Add Deal button */}
+      <div className="p-3 border-t border-slate-100 bg-slate-100/5 hover:bg-slate-100/20 transition-colors rounded-b-2xl">
+        <button
+          onClick={() => onAddDealClick(status.id)}
+          className="w-full py-1.5 border border-dashed border-slate-250 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/25 rounded-lg text-[12px] font-bold flex items-center justify-center gap-1 transition-all duration-150"
+        >
+          <Plus size={12} />
+          Add Card
+        </button>
       </div>
     </div>
   );
@@ -421,6 +482,11 @@ function DealsContent() {
     }
   };
 
+  const handleAddDealWithStatus = (statusId: number) => {
+    setSelectedStatusId(statusId.toString());
+    setModalOpen(true);
+  };
+
   const resetForm = () => {
     setSelectedContactId('');
     setSelectedStatusId('');
@@ -464,7 +530,7 @@ function DealsContent() {
         </div>
         <div className="flex gap-4 overflow-x-auto">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-96 w-64 bg-gray-150 rounded-xl flex-shrink-0" />
+            <div key={i} className="h-96 w-64 bg-gray-155 rounded-xl flex-shrink-0" />
           ))}
         </div>
       </div>
@@ -551,13 +617,14 @@ function DealsContent() {
       {/* Kanban Board Container */}
       <div className="overflow-x-auto pb-4">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 min-w-[1100px] py-1">
+          <div className="flex gap-4 min-w-[1150px] py-1">
             {orderedStatuses.map((status) => (
               <DroppableColumn
                 key={status.id}
                 status={status}
                 deals={getDealsForStatus(status.name)}
                 getColumnTotal={getColumnTotal}
+                onAddDealClick={handleAddDealWithStatus}
               />
             ))}
           </div>
