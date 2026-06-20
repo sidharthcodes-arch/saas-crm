@@ -1,6 +1,7 @@
 const Deal = require("../../models/Deal");
 const DealItem = require("../../models/DealItems");
 const Contact = require("../../models/Contact");
+const Activity = require("../../models/Activity");
 const { db } = require("../../config/db/db");
 const { logAudit } = require("../../utils/audit");
 
@@ -61,7 +62,40 @@ async function getDeals(workspaceId, filters = {}) {
     query.where("contacts.name", "LIKE", term);
   }
 
-  return query;
+  const deals = await query;
+
+  if (deals.length > 0) {
+    const dealIds = deals.map((d) => d.id);
+    const items = await db("deal_items")
+      .whereIn("deal_items.deal_id", dealIds)
+      .join("properties", "deal_items.property_id", "properties.id")
+      .join("property_types", "properties.property_type_id", "property_types.id")
+      .join("statuses", "properties.status_id", "statuses.id")
+      .select(
+        "deal_items.*",
+        "properties.name as property_name",
+        "properties.code as property_code",
+        "properties.area_sqft",
+        "properties.price as original_price",
+        "property_types.name as property_type",
+        "statuses.name as property_status"
+      )
+      .orderBy("deal_items.created_at", "asc");
+
+    const itemsMap = {};
+    items.forEach((item) => {
+      if (!itemsMap[item.deal_id]) {
+        itemsMap[item.deal_id] = [];
+      }
+      itemsMap[item.deal_id].push(item);
+    });
+
+    deals.forEach((deal) => {
+      deal.items = itemsMap[deal.id] || [];
+    });
+  }
+
+  return deals;
 }
 
 // ─── Get Single Deal ─────────────────────────────────────────────────────────
@@ -77,7 +111,17 @@ async function getDealById(id, workspaceId) {
 
   const items = await DealItem.findByDeal(id);
 
-  return { ...deal, items };
+  const activities = await db("activities")
+    .where({
+      "activities.workspace_id": workspaceId,
+      "activities.entity_type": "deal",
+      "activities.entity_id": id,
+    })
+    .leftJoin("users", "activities.created_by", "users.id")
+    .select("activities.*", "users.name as performed_by")
+    .orderBy("activities.created_at", "desc");
+
+  return { ...deal, items, activities };
 }
 
 // ─── Create Deal ────────────────────────────────────────────────────────────
@@ -446,6 +490,24 @@ async function deleteDealItem(dealId, itemId, workspaceId, userId) {
   return { message: "Deal item removed successfully" };
 }
 
+async function addActivity(id, workspaceId, userId, data) {
+  const deal = await Deal.findById(id, workspaceId);
+
+  if (!deal) {
+    const err = new Error("Deal not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return Activity.create(workspaceId, userId, {
+    entity_type: "deal",
+    entity_id: id,
+    type: data.type,
+    description: data.description || null,
+    activity_at: data.activity_at || null,
+  });
+}
+
 module.exports = {
   getDeals,
   getDealById,
@@ -454,4 +516,5 @@ module.exports = {
   deleteDeal,
   addDealItem,
   deleteDealItem,
+  addActivity,
 };

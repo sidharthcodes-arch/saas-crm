@@ -19,4 +19,7 @@ router.delete("/:id", dealsController.deleteDeal);
 router.post("/:id/items", dealsController.addDealItem);
 router.delete("/:id/items/:itemId", dealsController.deleteDealItem);
 
+// Deal activities
+router.post("/:id/activities", dealsController.addActivity);
+
 module.exports = router;

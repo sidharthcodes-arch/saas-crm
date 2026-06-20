@@ -11,7 +11,8 @@ import {
   TouchSensor,
   DragEndEvent,
   useDraggable,
-  useDroppable
+  useDroppable,
+  DragOverlay
 } from '@dnd-kit/core';
 import {
   Plus,
@@ -27,7 +28,16 @@ import {
   X,
   Sparkles,
   Clock,
-  MoreVertical
+  MoreVertical,
+  Eye,
+  FileText,
+  Calendar,
+  TrendingUp,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Target,
+  Scale
 } from 'lucide-react';
 
 import api from '@/lib/axios';
@@ -95,7 +105,7 @@ function getStatusColorClasses(statusName: string) {
   return map[statusName] ?? {
     border: 'border-l-4 border-l-gray-300',
     bg: 'bg-gray-50/50',
-    text: 'text-gray-700',
+    text: 'text-gray-705',
     dot: 'bg-gray-400',
     headerBg: 'bg-white border-b border-gray-100',
   };
@@ -103,35 +113,64 @@ function getStatusColorClasses(statusName: string) {
 
 // ─── Draggable Deal Card Component ─────────────────────────────────────────────
 
-function DraggableDealCard({ deal }: { deal: Deal }) {
+// ─── Deal Card Layout Component (Static or Overlay) ──────────────────────────
+
+interface DealCardProps {
+  deal: Deal;
+  isOverlay?: boolean;
+  isDragging?: boolean;
+}
+
+function DealCard({ deal, isOverlay, isDragging }: DealCardProps) {
   const router = useRouter();
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `deal-${deal.id}`,
-    data: deal,
-  });
-
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 50,
-      }
-    : undefined;
-
   const colorSetup = getStatusColorClasses(deal.status_name);
+  const mainItem = deal.items?.[0];
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      onClick={() => router.push(`/deals/${deal.id}`)}
-      className={`bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-4 hover:shadow-md transition-shadow duration-150 cursor-pointer relative flex flex-col gap-3 ${colorSetup.border} ${isDragging ? 'opacity-40 border-blue-400 shadow-lg' : ''}`}
+      onClick={() => !isOverlay && router.push(`/deals/${deal.id}`)}
+      className={`bg-white border rounded-xl p-3.5 hover:shadow-md hover:border-slate-350 transition-all duration-150 relative flex flex-col gap-2.5 group ${
+        isOverlay ? 'border-blue-400 shadow-xl scale-[1.025] cursor-grabbing z-[9999]' : 'border-slate-205/70 shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing'
+      } ${colorSetup.border} ${isDragging ? 'opacity-30' : ''}`}
     >
       {/* Top Row: Status Tag & Created Date */}
       <div className="flex items-center justify-between">
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border border-current/25 ${colorSetup.bg} ${colorSetup.text}`}>
+        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border border-current/25 ${colorSetup.bg} ${colorSetup.text}`}>
           {deal.status_name}
         </span>
-        <div className="flex items-center gap-1 text-[11px] text-slate-400">
+
+        {/* Hover Quick Actions */}
+        {!isOverlay && (
+          <div 
+            className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm transition-opacity duration-150 absolute right-2 top-2 z-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => router.push(`/deals/${deal.id}`)}
+              className="p-1 hover:bg-slate-50 text-slate-400 hover:text-slate-800 rounded transition-colors"
+              title="View Details"
+            >
+              <Eye size={12} />
+            </button>
+            <button
+              onClick={() => alert(`Add Note for deal with ${deal.contact_name}`)}
+              className="p-1 hover:bg-slate-50 text-slate-400 hover:text-slate-800 rounded transition-colors"
+              title="Add Note"
+            >
+              <FileText size={12} />
+            </button>
+            <button
+              onClick={() => alert(`Schedule follow-up for deal with ${deal.contact_name}`)}
+              className="p-1 hover:bg-slate-50 text-slate-400 hover:text-slate-800 rounded transition-colors"
+              title="Schedule Follow-up"
+            >
+              <Calendar size={12} />
+            </button>
+          </div>
+        )}
+
+        {/* Date Display */}
+        <div className={`flex items-center gap-1 text-[11px] text-slate-400 transition-opacity duration-150 ${!isOverlay ? 'group-hover:opacity-0' : ''}`}>
           <Clock size={11} />
           <span>
             {new Date(deal.created_at).toLocaleDateString('en-IN', {
@@ -142,21 +181,38 @@ function DraggableDealCard({ deal }: { deal: Deal }) {
         </div>
       </div>
 
-      {/* Middle Row: Contact Name & Subtitle */}
+      {/* Client Name */}
       <div>
-        <h4 className="text-[14px] font-bold text-slate-800 hover:text-blue-600 transition-colors duration-150 truncate">
+        <h4 className="text-[13.5px] font-bold text-slate-800 hover:text-blue-600 transition-colors duration-150 truncate" title={deal.contact_name}>
           {deal.contact_name}
         </h4>
-        <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
-          {deal.properties_count && deal.properties_count > 0 
-            ? `Linked Property Opportunity` 
-            : `Pipeline Deal Opportunity`}
-        </p>
       </div>
+
+      {/* Property Context (First-Class Citizen) */}
+      {mainItem ? (
+        <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 flex flex-col gap-1 text-[11px]">
+          <div className="flex items-center gap-1.5 text-slate-700 font-bold truncate">
+            <Building size={12} className="text-slate-450 shrink-0" />
+            <span className="truncate">{mainItem.property_name}</span>
+          </div>
+          <div className="text-slate-500 font-medium pl-4 flex items-center justify-between">
+            <span className="truncate">{mainItem.property_type || 'Property'} • {mainItem.area_sqft ? `${mainItem.area_sqft} sqft` : 'N/A sqft'}</span>
+            {deal.items && deal.items.length > 1 && (
+              <span className="px-1 py-0.2 bg-blue-50 text-blue-600 font-bold rounded text-[9px] border border-blue-100/50 shrink-0">
+                +{deal.items.length - 1} more
+              </span>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-50/50 border border-dashed border-slate-250 rounded-lg py-2.5 px-3 text-center text-[11px] text-slate-400 font-medium">
+          No properties linked
+        </div>
+      )}
 
       {/* Deal Value */}
       <div>
-        <p className="text-[17px] font-extrabold text-slate-900">
+        <p className="text-[16px] font-extrabold text-slate-900 leading-tight">
           {formatINR(deal.total_amount)}
         </p>
       </div>
@@ -164,7 +220,7 @@ function DraggableDealCard({ deal }: { deal: Deal }) {
       {/* Footer Row: Divider, Properties Count & Avatar Circle */}
       <div className="border-t border-slate-100 mt-1 pt-3 flex items-center justify-between">
         <div className="flex items-center gap-1 text-[11px] text-slate-400 font-semibold">
-          <Building size={12} className="text-slate-350" />
+          <Building size={12} className="text-slate-355" />
           <span>
             {deal.properties_count || 0} {deal.properties_count === 1 ? 'property' : 'properties'}
           </span>
@@ -173,25 +229,32 @@ function DraggableDealCard({ deal }: { deal: Deal }) {
         <div className="flex items-center gap-2">
           {/* Contact Initial Avatar */}
           <div
-            className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-[10px] border border-white shadow-sm flex-shrink-0"
+            className="w-5.5 h-5.5 rounded-full flex items-center justify-center text-white font-bold text-[9px] border border-white shadow-sm flex-shrink-0"
             style={{ backgroundColor: getAvatarColor(deal.contact_name || 'U') }}
             title={deal.contact_name}
           >
             {getInitials(deal.contact_name || 'U')}
           </div>
-
-          {/* Drag Handle */}
-          <div
-            {...listeners}
-            {...attributes}
-            onClick={(e) => e.stopPropagation()}
-            className="p-1 rounded text-slate-350 hover:text-slate-600 hover:bg-slate-50 cursor-grab active:cursor-grabbing flex-shrink-0 transition-colors"
-            title="Drag to update stage"
-          >
-            <GripVertical size={13} />
-          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Draggable Deal Card Component ─────────────────────────────────────────────
+
+function DraggableDealCard({ deal }: { deal: Deal }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `deal-${deal.id}`,
+    data: deal,
+  });
+
+  return (
+    <div ref={setNodeRef} {...listeners} {...attributes} className="outline-none">
+      <DealCard
+        deal={deal}
+        isDragging={isDragging}
+      />
     </div>
   );
 }
@@ -212,22 +275,60 @@ function DroppableColumn({ status, deals, getColumnTotal, onAddDealClick }: Drop
 
   const colorSetup = getStatusColorClasses(status.name);
 
+  // Stage empty states:
+  const getEmptyStateDetails = (stageName: string) => {
+    switch (stageName.toLowerCase()) {
+      case 'open':
+        return {
+          title: 'No open pipeline deals',
+          description: 'Create a new deal to start tracking pipeline progress.',
+          action: 'Add Deal',
+        };
+      case 'negotiation':
+        return {
+          title: 'No active negotiations',
+          description: 'Drag qualified deals here once property details are selected.',
+          action: 'Select Properties',
+        };
+      case 'won':
+        return {
+          title: 'No won deals yet',
+          description: 'Move successful negotiations here to close them!',
+          action: 'Close a Negotiation',
+        };
+      case 'lost':
+        return {
+          title: 'No lost deals',
+          description: 'Keep up the good work and keep conversion rates high.',
+          action: 'Review Policies',
+        };
+      default:
+        return {
+          title: 'No deals here',
+          description: 'No deal pipeline cards are currently in this stage.',
+          action: 'Add Deal',
+        };
+    }
+  };
+
+  const emptyState = getEmptyStateDetails(status.name);
+
   return (
     <div
       ref={setNodeRef}
-      className={`bg-slate-50 border border-slate-200/60 rounded-2xl min-h-[550px] flex flex-col flex-1 min-w-[280px] max-w-[320px] transition-all duration-150 ${
-        isOver ? 'ring-2 ring-blue-500 border-transparent shadow-sm bg-blue-50/10' : ''
+      className={`bg-slate-50 border border-slate-200/60 rounded-2xl min-h-[580px] flex flex-col flex-1 min-w-[280px] max-w-[320px] transition-all duration-150 ${
+        isOver ? 'ring-2 ring-blue-500 border-transparent shadow-md bg-blue-50/15' : ''
       }`}
     >
       {/* Column Header */}
       <div className={`px-4 py-3.5 rounded-t-2xl flex flex-col gap-1 ${colorSetup.headerBg}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <span className={`w-2 h-2 rounded-full ${colorSetup.dot} flex-shrink-0`} />
+            <span className={`w-2.5 h-2.5 rounded-full ${colorSetup.dot} flex-shrink-0`} />
             <h3 className="text-[13px] font-bold text-slate-800 truncate">
               {status.name}
             </h3>
-            <span className="px-1.5 py-0.5 rounded-full bg-slate-150 text-[10px] font-bold text-slate-600 border border-slate-200 flex-shrink-0">
+            <span className="px-1.5 py-0.5 rounded-full bg-slate-150 text-[10px] font-bold text-slate-650 border border-slate-200/60 flex-shrink-0">
               {deals.length}
             </span>
           </div>
@@ -235,12 +336,12 @@ function DroppableColumn({ status, deals, getColumnTotal, onAddDealClick }: Drop
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => onAddDealClick(status.id)}
-              className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition-colors"
+              className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100/60 transition-colors"
               title={`Add deal to ${status.name}`}
             >
               <Plus size={14} />
             </button>
-            <button className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+            <button className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100/60 transition-colors">
               <MoreVertical size={13} />
             </button>
           </div>
@@ -253,26 +354,24 @@ function DroppableColumn({ status, deals, getColumnTotal, onAddDealClick }: Drop
       </div>
 
       {/* Column Cards Container */}
-      <div className="p-3 flex-1 overflow-y-auto max-h-[580px] space-y-3">
+      <div className="p-3 flex-1 overflow-y-auto max-h-[580px] space-y-3 rounded-b-2xl">
         {deals.length === 0 ? (
-          <div className="h-full min-h-[220px] border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center p-4 text-center bg-slate-100/15">
-            <Inbox size={22} className="text-slate-300 mb-1.5" />
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">No deals</p>
+          <div className="h-full min-h-[250px] border border-dashed border-slate-200/80 rounded-xl flex flex-col items-center justify-center p-5 text-center bg-slate-100/10">
+            <Inbox size={24} className="text-slate-350 mb-2" />
+            <p className="text-[12.5px] text-slate-705 font-bold mb-1">{emptyState.title}</p>
+            <p className="text-[10px] text-slate-400 font-semibold max-w-[185px] leading-relaxed mb-3">
+              {emptyState.description}
+            </p>
+            <button
+              onClick={() => onAddDealClick(status.id)}
+              className="px-3 py-1 bg-white border border-slate-200 hover:border-blue-300 hover:text-blue-600 rounded-md text-[10px] font-bold shadow-sm transition-all duration-150 animate-pulse"
+            >
+              {emptyState.action}
+            </button>
           </div>
         ) : (
           deals.map((deal) => <DraggableDealCard key={deal.id} deal={deal} />)
         )}
-      </div>
-
-      {/* Column Footer: Inline Add Deal button */}
-      <div className="p-3 border-t border-slate-100 bg-slate-100/5 hover:bg-slate-100/20 transition-colors rounded-b-2xl">
-        <button
-          onClick={() => onAddDealClick(status.id)}
-          className="w-full py-1.5 border border-dashed border-slate-250 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/25 rounded-lg text-[12px] font-bold flex items-center justify-center gap-1 transition-all duration-150"
-        >
-          <Plus size={12} />
-          Add Card
-        </button>
       </div>
     </div>
   );
@@ -292,6 +391,7 @@ function DealsContent() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [statuses, setStatuses] = useState<{ id: number; name: string }[]>([]);
+  const [activeId, setActiveId] = useState<number | null>(null);
 
   // Page loading & modal state
   const [pageLoading, setPageLoading] = useState(true);
@@ -412,14 +512,37 @@ function DealsContent() {
     return getDealsForStatus(statusName).reduce((sum, d) => sum + Number(d.total_amount || 0), 0);
   };
 
-  const totalPipeline = deals
-    .filter((d) => d.status_name === 'Open' || d.status_name === 'Negotiation')
-    .reduce((sum, d) => sum + Number(d.total_amount || 0), 0);
+  // 1. Total Deals
+  const totalDeals = deals.length;
 
-  const openCount = deals.filter((d) => d.status_name === 'Open' || d.status_name === 'Negotiation').length;
+  // 2. Open Pipeline Value (Open + Negotiation)
+  const openDeals = getDealsForStatus('Open');
+  const negotiationDeals = getDealsForStatus('Negotiation');
+  const openPipelineValue = openDeals.reduce((sum, d) => sum + Number(d.total_amount || 0), 0) +
+                            negotiationDeals.reduce((sum, d) => sum + Number(d.total_amount || 0), 0);
+  const openCount = openDeals.length + negotiationDeals.length;
+
+  // 3. Weighted Pipeline Value (20% for Open, 60% for Negotiation, 100% for Won, 0% for Lost)
+  const weightedPipelineValue =
+    openDeals.reduce((sum, d) => sum + Number(d.total_amount || 0) * 0.2, 0) +
+    negotiationDeals.reduce((sum, d) => sum + Number(d.total_amount || 0) * 0.6, 0) +
+    getDealsForStatus('Won').reduce((sum, d) => sum + Number(d.total_amount || 0) * 1.0, 0);
+
+  // 4. Deals Won
   const wonCount = getDealsForStatus('Won').length;
   const wonValue = getColumnTotal('Won');
+
+  // 5. Deals Lost
   const lostCount = getDealsForStatus('Lost').length;
+  const lostValue = getColumnTotal('Lost');
+
+  // 6. Conversion Rate (Won Deals / Total Closed Deals)
+  const closedCount = wonCount + lostCount;
+  const conversionRate = closedCount > 0 ? (wonCount / closedCount) * 100 : 0;
+
+  // 7. Average Deal Size (Total Value of Deals / Number of Deals)
+  const totalValue = deals.reduce((sum, d) => sum + Number(d.total_amount || 0), 0);
+  const avgDealSize = totalDeals > 0 ? totalValue / totalDeals : 0;
 
   // Form Handlers
   const handlePropertyChange = (propIdStr: string) => {
@@ -553,7 +676,7 @@ function DealsContent() {
         </div>
         <div className="flex items-center gap-4">
           <div className="px-3.5 py-1.5 rounded-lg bg-gray-100 text-gray-600 border border-gray-200 font-bold text-[13px]">
-            Pipeline: <span className="text-gray-900">{formatINR(totalPipeline)}</span>
+            Pipeline: <span className="text-gray-900">{formatINR(openPipelineValue)}</span>
           </div>
           <button
             onClick={() => setModalOpen(true)}
@@ -566,57 +689,81 @@ function DealsContent() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Stat 1: Total */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Deals</span>
-            <span className="text-[20px] font-bold text-gray-900 mt-1 block">{deals.length}</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Stat 1: Total Deals */}
+        <div className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition-shadow duration-150">
+          <div className="flex items-center justify-between">
+            <span className="text-[9.5px] font-bold text-gray-400 uppercase tracking-wider">Total Deals</span>
+            <div className="w-7 h-7 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+              <Briefcase size={13} />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-            <Briefcase size={16} />
-          </div>
-        </div>
-
-        {/* Stat 2: Open */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Open Pipeline</span>
-            <span className="text-[20px] font-bold text-amber-600 mt-1 block">{openCount}</span>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-            <Sparkles size={16} />
+          <div className="mt-2.5">
+            <span className="text-[18px] font-extrabold text-gray-900 leading-none">{totalDeals}</span>
+            <span className="block text-[10px] text-gray-400 font-semibold mt-0.5">All opportunities</span>
           </div>
         </div>
 
-        {/* Stat 3: Won */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Deals Won</span>
-            <span className="text-[20px] font-bold text-green-600 mt-1 block">
-              {wonCount} <span className="text-[12px] font-medium text-gray-400 ml-1">({formatINR(wonValue)})</span>
-            </span>
+        {/* Stat 2: Open Pipeline */}
+        <div className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition-shadow duration-150">
+          <div className="flex items-center justify-between">
+            <span className="text-[9.5px] font-bold text-gray-400 uppercase tracking-wider">Open Pipeline</span>
+            <div className="w-7 h-7 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-650">
+              <Sparkles size={13} />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-green-50 border border-green-100 flex items-center justify-center text-green-600">
-            <DollarSign size={16} />
+          <div className="mt-2.5">
+            <span className="text-[15px] font-extrabold text-amber-600 leading-none truncate block">{formatINR(openPipelineValue)}</span>
+            <span className="block text-[10px] text-gray-400 font-semibold mt-0.5">{openCount} active deals</span>
           </div>
         </div>
 
-        {/* Stat 4: Lost */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Deals Lost</span>
-            <span className="text-[20px] font-bold text-red-600 mt-1 block">{lostCount}</span>
+        {/* Stat 3: Deals Won */}
+        <div className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition-shadow duration-150">
+          <div className="flex items-center justify-between">
+            <span className="text-[9.5px] font-bold text-gray-400 uppercase tracking-wider">Won Deals</span>
+            <div className="w-7 h-7 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+              <CheckCircle2 size={13} />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-500">
-            <AlertCircle size={16} />
+          <div className="mt-2.5">
+            <span className="text-[18px] font-extrabold text-emerald-600 leading-none">{wonCount}</span>
+            <span className="block text-[10px] text-gray-455 font-bold mt-0.5 truncate">{formatINR(wonValue)}</span>
+          </div>
+        </div>
+
+        {/* Stat 4: Deals Lost */}
+        <div className="bg-white border border-gray-200 rounded-xl p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition-shadow duration-150">
+          <div className="flex items-center justify-between">
+            <span className="text-[9.5px] font-bold text-gray-400 uppercase tracking-wider">Lost Deals</span>
+            <div className="w-7 h-7 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
+              <XCircle size={13} />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <span className="text-[18px] font-extrabold text-rose-600 leading-none">{lostCount}</span>
+            <span className="block text-[10px] text-gray-455 font-bold mt-0.5 truncate">{formatINR(lostValue)}</span>
           </div>
         </div>
       </div>
 
       {/* Kanban Board Container */}
       <div className="overflow-x-auto pb-4">
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          onDragStart={(event) => {
+            const { active } = event;
+            const dealId = Number(active.id.toString().replace('deal-', ''));
+            setActiveId(dealId);
+          }}
+          onDragEnd={async (event) => {
+            setActiveId(null);
+            handleDragEnd(event);
+          }}
+          onDragCancel={() => {
+            setActiveId(null);
+          }}
+        >
           <div className="flex gap-4 min-w-[1150px] py-1">
             {orderedStatuses.map((status) => (
               <DroppableColumn
@@ -628,6 +775,13 @@ function DealsContent() {
               />
             ))}
           </div>
+          <DragOverlay>
+            {activeId ? (
+              <div className="w-[280px] md:w-[300px]">
+                <DealCard deal={deals.find((d) => d.id === activeId)!} isOverlay />
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
       </div>
 

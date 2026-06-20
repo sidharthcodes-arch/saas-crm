@@ -73,6 +73,7 @@ export interface DealItem {
   property_name: string;
   property_code: string;
   area_sqft: number;
+  property_type?: string;
 }
 
 export interface Property {

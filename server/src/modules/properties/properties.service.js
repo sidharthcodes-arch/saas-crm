@@ -48,7 +48,23 @@ async function getPropertyById(id, workspaceId) {
     err.statusCode = 404;
     throw err;
   }
-  return property;
+
+  // Fetch linked deals where this property appears
+  const deals = await db("deal_items")
+    .where("deal_items.property_id", id)
+    .join("deals", "deal_items.deal_id", "deals.id")
+    .join("contacts", "deals.contact_id", "contacts.id")
+    .join("statuses", "deals.status_id", "statuses.id")
+    .select(
+      "deals.id as deal_id",
+      "deals.total_amount",
+      "deals.created_at",
+      "contacts.name as contact_name",
+      "statuses.name as status_name",
+      "deal_items.price as deal_price"
+    );
+
+  return { ...property, deals };
 }
 
 async function createProperty(workspaceId, userId, data) {

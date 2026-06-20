@@ -103,6 +103,21 @@ async function deleteDealItem(req, res, next) {
   }
 }
 
+// POST /api/v1/deals/:id/activities
+async function addActivity(req, res, next) {
+  try {
+    const activity = await dealsService.addActivity(
+      req.params.id,
+      req.user.workspace_id,
+      req.user.id,
+      req.body
+    );
+    return res.status(201).json({ success: true, data: activity });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getDeals,
   getDealById,
@@ -111,4 +126,5 @@ module.exports = {
   deleteDeal,
   addDealItem,
   deleteDealItem,
+  addActivity,
 };
