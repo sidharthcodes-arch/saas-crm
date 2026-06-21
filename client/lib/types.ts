@@ -33,7 +33,7 @@ export interface Lead {
   converted_contact_id: number | null;
   status_name: string;
   property_name:string;
-  assigned_user_name: string | null;
+  assigned_to_name: string | null;
   created_at: string;
   updated_at: string;
 }

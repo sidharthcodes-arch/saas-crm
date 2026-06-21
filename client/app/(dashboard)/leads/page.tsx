@@ -518,7 +518,7 @@ export default function LeadsPage() {
 
                     {/* Assigned To */}
                     <td className="px-4 py-3 text-[13px] text-[#6b7280] whitespace-nowrap">
-                      {lead.assigned_user_name || '—'}
+                      {lead.assigned_to_name || '—'}
                     </td>
 
                     {/* Date */}

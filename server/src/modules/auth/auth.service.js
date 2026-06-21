@@ -1,3 +1,4 @@
+const { db } = require("../../config/db/db");
 const jwt = require("jsonwebtoken");
 const User = require("../../models/User");
 const Workspace = require("../../models/Workspace");
@@ -45,10 +46,20 @@ async function register({ workspaceName, name, email, password }) {
   // 1. Create workspace
   const workspaceId = await Workspace.create({ name: workspaceName });
 
-  // 2. Create workspace-scoped admin role
-  const adminRoleId = await Role.create({ name: "admin" });
+  // 2. Reuse or create "Admin" role
+  
+  const adminRole = await db("roles")
+    .whereRaw("LOWER(name) = ?", ["admin"])
+    .first();
 
-  // 3. Create user with the new admin role
+  let adminRoleId;
+  if (adminRole) {
+    adminRoleId = adminRole.id;
+  } else {
+    adminRoleId = await Role.create({ name: "Admin" });
+  }
+
+  // 3. Create user with the admin role
   const newUserId = await User.create(
     { name, email, password, role_id: adminRoleId, is_super_admin: false },
     workspaceId

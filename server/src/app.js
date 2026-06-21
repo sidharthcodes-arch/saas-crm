@@ -15,6 +15,8 @@ const activitiesRoutes = require("./modules/activities/activities.routes");
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const filesRoutes = require("./modules/files/files.routes");
 const statusesRoutes = require("./modules/statuses/statuses.routes");
+const rolesRoutes = require("./modules/roles/roles.routes");
+const modulesRoutes = require("./modules/modules/modules.routes");
 
 const app = express();
 
@@ -33,6 +35,8 @@ app.use(limiter);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/workspaces", workspaceRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/roles", rolesRoutes);
+app.use("/api/v1/modules", modulesRoutes);
 app.use("/api/v1/leads", leadRoutes);
 app.use("/api/v1/contacts", contactRoutes);
 app.use("/api/v1/deals", dealRoutes);

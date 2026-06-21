@@ -13,8 +13,8 @@ async function getUsers(req, res, next) {
 // POST /api/v1/users/create
 async function createUser(req, res, next) {
   try {
-    const user = await userService.createUser(req.user.workspace_id, req.body);
-    return res.status(201).json({ success: true, data: user });
+    const { user, tempPassword } = await userService.createUser(req.user.workspace_id, req.body);
+    return res.status(201).json({ success: true, data: { user, tempPassword } });
   } catch (err) {
     next(err);
   }

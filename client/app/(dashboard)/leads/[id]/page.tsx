@@ -474,7 +474,7 @@ export default function LeadDetailPage() {
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Assigned To</p>
-                  <p className="text-[13px] font-medium text-gray-900 mt-1">{lead.assigned_user_name || '—'}</p>
+                  <p className="text-[13px] font-medium text-gray-900 mt-1">{lead.assigned_to_name || '—'}</p>
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Created At</p>

@@ -25,6 +25,26 @@ async function getWorkspace(id) {
     throw err;
   }
 
+  const { db } = require("../../config/db/db");
+  const [
+    usersCount,
+    leadsCount,
+    dealsCount,
+    propertiesCount
+  ] = await Promise.all([
+    db("users").where("workspace_id", id).count("id as count").first(),
+    db("leads").where("workspace_id", id).count("id as count").first(),
+    db("deals").where("workspace_id", id).count("id as count").first(),
+    db("properties").where("workspace_id", id).count("id as count").first(),
+  ]);
+
+  workspace.stats = {
+    users: usersCount?.count || 0,
+    leads: leadsCount?.count || 0,
+    deals: dealsCount?.count || 0,
+    properties: propertiesCount?.count || 0,
+  };
+
   return workspace;
 }
 
@@ -47,7 +67,7 @@ async function updateWorkspace(id, { name }) {
     is_active: workspace.is_active, // always preserve existing value, never trust client
   });
 
-  return Workspace.findById(id);
+  return getWorkspace(id);
 }
 
 // ─── Set Active Status (super admin only) ─────────────────────────────────

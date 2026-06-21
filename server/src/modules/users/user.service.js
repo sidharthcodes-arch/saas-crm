@@ -30,7 +30,10 @@ async function createUser(workspaceId, { name, email, role_id, password }) {
   );
 
   const user = await User.findById(userId);
-  return User.sanitize(user);
+  return {
+    user: User.sanitize(user),
+    tempPassword
+  };
 }
 
 // ─── Update User ──────────────────────────────────────────────────────────
