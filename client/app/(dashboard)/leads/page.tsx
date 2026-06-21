@@ -21,14 +21,7 @@ import LeadForm, { LeadFormData } from '@/components/leads/LeadForm';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const STATUSES = [
-  { id: '1', name: 'New' },
-  { id: '2', name: 'Contacted' },
-  { id: '3', name: 'Follow Up' },
-  { id: '4', name: 'Qualified' },
-  { id: '5', name: 'Converted' },
-  { id: '6', name: 'Lost' },
-];
+
 
 const SOURCES = ['Website', 'Referral', 'Walk-in', 'Social Media', 'Cold Call', 'Event', 'Email Campaign', 'Other'];
 
@@ -191,6 +184,7 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statuses, setStatuses] = useState<{id: number, name: string}[]>([]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -214,6 +208,12 @@ export default function LeadsPage() {
     setPage(1);
     fetchLeads({ search: debouncedSearch, status_id: statusFilter });
   }, [debouncedSearch, statusFilter, fetchLeads]);
+
+  useEffect(() => {
+    api.get("/statuses?context=Lead")
+       .then(res => setStatuses(res.data.data ?? []))
+       .catch(() => setStatuses([]));
+  }, []);
 
   const hasFilters = search !== '' || statusFilter !== '' || sourceFilter !== '';
 
@@ -356,7 +356,7 @@ export default function LeadsPage() {
           className="w-full sm:w-44 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-[#111827] bg-white focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-colors duration-150"
         >
           <option value="">All Statuses</option>
-          {STATUSES.map((s) => (
+          {statuses.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>

@@ -9,14 +9,7 @@ import Button from "@/components/ui/Button";
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 
-const STATUSES = [
-  { id: 1, name: "New" },
-  { id: 2, name: "Contacted" },
-  { id: 3, name: "Follow Up" },
-  { id: 4, name: "Qualified" },
-  { id: 5, name: "Converted" },
-  { id: 6, name: "Lost" },
-];
+
 
 // ─── Raw form values (HTML form always yields strings for select) ───────────────
 
@@ -58,11 +51,12 @@ export function LeadForm({
   isLoading = false,
 }: LeadFormProps) {
   const [users, setUsers] = useState<User[]>([]);
+  const [statuses, setStatuses] = useState<{id: number, name: string}[]>([]);
   const [errors, setErrors] = useState<
     Partial<Record<keyof RawFormValues, string>>
   >({});
 
-  const { register, handleSubmit } = useForm<RawFormValues>({
+  const { register, handleSubmit, setValue } = useForm<RawFormValues>({
     defaultValues: {
       name: lead?.name ?? "",
       phone: lead?.phone ?? "",
@@ -73,12 +67,28 @@ export function LeadForm({
     },
   });
 
+// First useEffect — just fetch users and statuses
   useEffect(() => {
     api
       .get("/users")
       .then((res) => setUsers(res.data.data ?? []))
       .catch(() => setUsers([]));
+
+    api
+      .get("/statuses?context=Lead")
+      .then((res) => setStatuses(res.data.data ?? []))
+      .catch(() => setStatuses([]));
   }, []);
+
+  // Second useEffect — runs AFTER users and statuses are set in state
+  useEffect(() => {
+    if (users.length > 0 && lead?.assigned_to) {
+      setValue("assigned_to", String(lead.assigned_to));
+    }
+    if (statuses.length > 0 && lead?.status_id) {
+      setValue("status_id", String(lead.status_id));
+    }
+  }, [users, statuses, lead?.assigned_to, lead?.status_id, setValue]);
 
   // ── Validate + coerce ──
   const handleFormSubmit = async (raw: RawFormValues) => {
@@ -148,7 +158,7 @@ export function LeadForm({
           Status *
         </label>
         <select className={selectClass} {...register("status_id")}>
-          {STATUSES.map((s) => (
+          {statuses.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
